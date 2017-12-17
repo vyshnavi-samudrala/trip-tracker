@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -8,40 +7,82 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { WebBrowser } from 'expo';
+import MapView from 'react-native-maps' // 0.19.0
 
-import { MonoText } from '../components/StyledText';
+
+import "prop-types"; // 15.6.0
 
 export default class HomeScreen extends React.Component {
   static navigationOptions = {
     header: null,
+  };
+  state = {
+    mapRegion: { latitude: 13.0827, longitude: 80.2707, latitudeDelta: 0.4, longitudeDelta: 0.3 }
+  };
+
+  componentDidMount() {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latDelta = Number(position.coords.latitude) - Number(position.coords.latitude)
+        const lngDelta = Number(position.coords.longitude) - Number(position.coords.longitude)
+        this.setState({
+          mapRegion: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            latitudeDelta: latDelta,
+            longitudeDelta: lngDelta
+          }
+        });
+      },
+      (error) => this.setState({ error: error.message }),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 },
+    );
+  }
+
+  _handleMapRegionChange = mapRegion => {
+    console.log(mapRegion)
+    this.setState({ mapRegion });
+    // this.getMaps
   };
 
   render() {
     return (
       <View style={styles.container}>
         {Platform.OS === 'ios'
-        ? <ScrollView style={styles.container} contentContainerStyle={styles.contentContainerIos}>
-          <View style={styles.getStartedContainer}>
-            <Text style={styles.getStartedText}>
-              Oops this project is available only in Android
+          ? <ScrollView style={styles.container} contentContainerStyle={styles.contentContainerIos}>
+            <View style={styles.getStartedContainer}>
+              <Text style={styles.getStartedText}>
+                Oops this project is available only in Android
             </Text>
-          </View>
+            </View>
           </ScrollView>
-        : <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-          <View style={styles.getStartedContainer}>
-            {/* {this._maybeRenderDevelopmentModeWarning()} */}
-            <Text style={styles.getStartedText}>
-              Track your trip over google maps!
+          : <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+            <MapView
+              style={{ alignSelf: 'stretch', height: '100%', flex: 1 }}
+              region={this.state.mapRegion}
+              pinColor={'green'}
+              initialRegion={this.state.mapRegion}
+              onRegionChange={this._handleMapRegionChange}
+            >
+              <MapView.Marker
+                coordinate={{ latitude: this.state.mapRegion.latitude, longitude: this.state.mapRegion.longitude }}
+                title={'test'}
+                description={'description'}
+              />
+            </MapView>
+            <View style={styles.getStartedContainer}>
+              {/* {this._maybeRenderDevelopmentModeWarning()} */}
+              <Text style={styles.getStartedText}>
+                Track your trip over google maps!
             </Text>
-          </View>
+            </View>
 
-          <View style={styles.helpContainer}>
-            <TouchableOpacity onPress={this.startNewTrip} style={styles.helpLink}>
-              <Text style={styles.helpLinkText}>Add</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>}
+            <View style={styles.helpContainer}>
+              <TouchableOpacity onPress={this.startNewTrip} style={styles.helpLink}>
+                <Text style={styles.helpLinkText}>Start a new trip!</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>}
       </View>
     );
   }
@@ -93,80 +134,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   contentContainer: {
-    paddingTop: 30,
+    paddingTop: 0,
+    flex: 1
   },
   contentContainerIos: {
     paddingTop: 30,
     justifyContent: 'center',
     alignItems: 'center'
-  },  
-  welcomeContainer: {
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  welcomeImage: {
-    width: 100,
-    height: 80,
-    resizeMode: 'contain',
-    marginTop: 3,
-    marginLeft: -10,
-  },
-  getStartedContainer: {
-    alignItems: 'center',
-    marginHorizontal: 50,
-  },
-  homeScreenFilename: {
-    marginVertical: 7,
-  },
-  codeHighlightText: {
-    color: 'rgba(96,100,109, 0.8)',
-  },
-  codeHighlightContainer: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    borderRadius: 3,
-    paddingHorizontal: 4,
   },
   getStartedText: {
     fontSize: 17,
     color: 'rgba(96,100,109, 1)',
     lineHeight: 24,
+    margin: 12,
     textAlign: 'center',
-  },
-  tabBarInfoContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    ...Platform.select({
-      ios: {
-        shadowColor: 'black',
-        shadowOffset: { height: -3 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 20,
-      },
-    }),
-    alignItems: 'center',
-    backgroundColor: '#fbfbfb',
-    paddingVertical: 20,
-  },
-  tabBarInfoText: {
-    fontSize: 17,
-    color: 'rgba(96,100,109, 1)',
-    textAlign: 'center',
-  },
-  navigationFilename: {
-    marginTop: 5,
   },
   helpContainer: {
     marginTop: 15,
     alignItems: 'center',
   },
   helpLink: {
-    paddingVertical: 15,
+    paddingVertical: 25,
   },
   helpLinkText: {
     fontSize: 14,
