@@ -13,69 +13,76 @@ import {
 import "prop-types"; // 15.6.0
 import firebase from './firebase'
 import * as Progress from 'react-native-progress';
+import LoginScreen from './LoginScreen'
+import SignUpScreen from './SignUpScreen'
+import {
+  StackNavigator,
+} from 'react-navigation'
 
-export default class HomeScreen extends React.Component {
+class HomeScreen extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
+      loading: false
     }
   }
   signUpUser = (email, password) => {
     this.setState({ loading: true })
-    // try {
-    //   await firebase.database().ref('messages').push(email);
-    // } catch (error) {
-    //   console.log(error.toString())
-    // }
-    // try {
-    //   firebase.auth().signInWithEmailAndPassword(email, password)
-    //     .then((data) => {
-    //       console.log(data)
-    //       this.setState({ error: '', loading: false });
-    //     })
-    //     .catch(() => {
-    //       //Login was not successful, let's create a new account
-    //       firebase.auth().createUserWithEmailAndPassword(email, password)
-    //         .then(() => { this.setState({ error: '', loading: false }); })
-    //         .catch(() => {
-    //           this.setState({ error: 'Authentication failed.', loading: false });
-    //         });
-    //     });
-    // } catch (error) {
-    //   console.log(error.toString())
-    // }
-
     try {
       firebase.auth().createUserWithEmailAndPassword(email, password)
-        .then((data) => {
-          console.log(data)
-          this.setState({ error: '', loading: false });
+        .then(() => {
+          var user = firebase.auth().currentUser
+          this.setState({ loading: false, user: user });
+          alert('Successfully Registered!')
         })
-        .catch((err) => {
-          console.log(err)
-          this.setState({ error: 'Authentication failed.', loading: false });
-        });
+        .catch((error) => {
+          // Handle Errors here.
+          var errorCode = error.code;
+          var errorMessage = error.message;
+          if (errorCode == 'auth/weak-password') {
+            this.setState({ loading: false }, alert(errorMessage));
+          } else {
+            this.setState({ loading: false, email: '', password: '' }, alert(errorMessage));
+          }
+          console.log(error)
+        })
     } catch (error) {
-      console.log(error.toString())
+      console.log(error)
     }
 
   }
 
   SignUpSubmit = () => {
-    console.log('sign up button clicked')
-    this.signUpUser(this.state.email, this.state.password)
+    if (this.validateEmail() && this.validatePassword()) {
+      this.signUpUser(this.state.email, this.state.password)
+    }
   }
   validateEmail = () => {
     let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/
-    if (reg.test(this.state.email) === false) this.setState({ emailError: true })
-    else this.setState({ emailError: false })
+    if (reg.test(this.state.email) === false) {
+      this.setState({ emailError: true })
+      return false
+    }
+    else {
+      this.setState({ emailError: false })
+      return true
+    }
   }
   validatePassword = () => {
-    if (this.state.password) this.setState({ passwordError: false })
-    else this.setState({ passwordError: true })
+    if (this.state.password) {
+      this.setState({ passwordError: false })
+      return true
+    }
+    else {
+      this.setState({ passwordError: true })
+      return false
+    }
   }
-
+  static navigationOptions = {
+    title: 'Welcome',
+  };
   render() {
+    const { navigate } = this.props.navigation;
     return (
       <View style={styles.container}>
         {Platform.OS === 'ios'
@@ -91,22 +98,29 @@ export default class HomeScreen extends React.Component {
               <Text style={styles.getStartedText}>
                 Track your trip over google maps!
               </Text>
-              <TouchableOpacity onPress={this.startTrip} style={styles.signUpTouchable}>
-                <View style={styles.textInputView}><TextInput style={styles.textInput} editable={!this.state.loading} onBlur={this.validateEmail} placeholder="Email" onChangeText={(email) => this.setState({ email })} keyboardType="email-address" value={this.state.email} />
-                  {this.state.emailError && <Text style={styles.errorText}>Enter Valid Email</Text>}
-                </View>
-                <View style={styles.textInputView}><TextInput style={styles.textInput} editable={!this.state.loading} placeholder="Password" onChangeText={(password) => this.setState({ password })} onBlur={this.validatePassword} secureTextEntry={true} value={this.state.password} />
-                  {this.state.passwordError && <Text style={styles.errorText}>Password is Required</Text>}
-                </View>
-                {this.state.loading && <Progress.Circle style={{ position: 'absolute', flex: 1, alignSelf: 'center', margin: 'auto' }} size={30} indeterminate={true} />}
-                <View style={styles.SignUpButtonView}><Button style={styles.signUpButton} title="Sign up!" color="steelblue" onPress={this.SignUpSubmit} /></View>
-              </TouchableOpacity>
+              <Button onPress={() => navigate('Login', { name: 'Login', PageError: null })} title="Login" />
+              <View style={styles.textInputView}><TextInput style={styles.textInput} editable={!this.state.loading} onBlur={this.validateEmail} placeholder="Email" onChangeText={(email) => this.setState({ email })} keyboardType="email-address" value={this.state.email} />
+                {this.state.emailError && <Text style={styles.errorText}>Enter Valid Email</Text>}
+              </View>
+              <View style={styles.textInputView}><TextInput style={styles.textInput} editable={!this.state.loading} placeholder="Password" onChangeText={(password) => this.setState({ password })} onBlur={this.validatePassword} secureTextEntry={true} value={this.state.password} />
+                {this.state.passwordError && <Text style={styles.errorText}>Password is Required</Text>}
+              </View>
+              {this.state.loading && <Progress.Circle style={{ position: 'absolute', flex: 1, alignSelf: 'center', margin: 'auto' }} size={30} indeterminate={true} />}
+              <View style={styles.SignUpButtonView}>
+                <TouchableOpacity onPress={this.startTrip} style={styles.signUpTouchable}><Button style={styles.signUpButton} title="Home!" color="steelblue" onPress={this.SignUpSubmit} /></TouchableOpacity>
+              </View>
             </View>
           </ScrollView>}
       </View>
     );
   }
 }
+
+const HomeScreenNav = StackNavigator({
+  Home: { screen: HomeScreen },
+  SignUp: { screen: SignUpScreen },
+  Login: { screen: LoginScreen }
+}, { headerMode: 'none', initialRouteName: 'Login' });
 
 const styles = StyleSheet.create({
   container: {
@@ -161,3 +175,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   }
 });
+
+export default HomeScreenNav
