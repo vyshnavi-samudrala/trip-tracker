@@ -13,7 +13,6 @@ import {
 import "prop-types"; // 15.6.0
 import firebase from './firebase'
 import * as Progress from 'react-native-progress';
-import { error } from 'util';
 
 export default class LoginScreen extends React.Component {
     constructor(props) {
@@ -22,18 +21,24 @@ export default class LoginScreen extends React.Component {
             loading: false
         }
     }
-    static navigationOptions = ({ navigation }) => ({
-        title: 'Login',
-    });
+
+    static navigationOptions = ({ navigation }) => {
+        const { goBack } = navigation;
+        let headerLeft = <Text style={{ color: '#000', fontSize: 20, marginLeft: 20, alignSelf: 'center' }} onPress={() => goBack()}>&larr;</Text>
+        let title = 'Login'
+        return { headerLeft, title }
+    }
 
     LoginUser = () => {
         this.setState({ error: '', loading: true });
 
         const { email, password } = this.state;
         firebase.auth().signInWithEmailAndPassword(email, password)
-            .then(() => { this.setState({ error: '', loading: false }); })
+            .then(() => {
+                const { navigate } = this.props.navigation
+                this.setState({ error: '', loading: false }, navigate('MapScreen'));
+            })
             .catch((error) => {
-                console.log(error)
                 const { navigate } = this.props.navigation
                 navigate('SignUp', { PageError: 'The email you provided needs to be registered' })
             });

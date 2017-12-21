@@ -21,9 +21,12 @@ export default class Register extends React.Component {
             loading: false
         }
     }
-    static navigationOptions = ({ navigation }) => ({
-        title: 'Sign Up',
-    });
+    static navigationOptions = ({ navigation }) => {
+        const { goBack } = navigation;
+        let headerLeft = <Text style={{ color: '#000', fontSize: 20, marginLeft: 20 }} onPress={() => goBack()}>&larr;</Text>
+        let title = 'Sign Up'
+        return { headerLeft, title }
+    }
 
     signUpUser = (email, password) => {
         this.setState({ loading: true })

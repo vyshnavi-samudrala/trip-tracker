@@ -2,3 +2,4 @@ node_modules/**/*
 .expo/**/*
 functions/node_modules/**/*
 screens/firebase.js
+doc.pdf

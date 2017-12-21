@@ -12,59 +12,69 @@ import {
 } from 'react-native';
 import MapView from 'react-native-maps' // 0.19.0
 import "prop-types"; // 15.6.0
-// import * as firebase from "firebase"
+import { error } from '@firebase/database/dist/esm/src/core/util/util';
+const { width, height } = Dimensions.get('window')
+import Expo from 'expo';
+import { Constants, Location, Permissions } from 'expo';
 
-// firebase.initializeApp({
-//   apiKey: "AIzaSyDbbjoIMP9zKELfLx2SE4_yuAT1Xfv2oKg",
-//   authDomain: "trip-tracking-4da82.firebaseapp.com",
-//   databaseURL: "https://trip-tracking-4da82.firebaseio.com",
-//   storageBucket: "trip-tracking-4da82.appspot.com",
-//   messagingSenderId: "893836079567",
-//   projectId: "trip-tracking-4da82"
-// });
+const SCREEN_HEIGHT = height
+const SCREEN_WIDTH = width
+const ASPECT_RATIO = width / height
+const LATITUDE_DELTA = 0.0922
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO
 
-// async function signUpUser(email, pass) {
-//   try {
-//     await firebase.auth()
-//       .createUserWithEmailAndPassword(email, pass);
-
-//     console.log("Account created");
-
-//     // Navigate to the Home page, the user is auto logged in
-
-//   } catch (error) {
-//     console.log(error.toString())
-//   }
-// }
-
+async function getLocationAsync() {
+    const { Location, Permissions } = Expo;
+    const { status } = await Permissions.askAsync(Permissions.LOCATION);
+    if (status === 'granted') {
+        return Location.getCurrentPositionAsync({ enableHighAccuracy: true });
+    } else {
+        throw new Error('Location permission not granted');
+    }
+}
 
 export default class HomeScreen extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
             isMapReady: false,
-            mapRegion: { latitude: 13.0827, longitude: 80.2707, latitudeDelta: 0.4, longitudeDelta: 0.3 }
+            mapRegion: {
+                latitude: 0,
+                longitude: 0,
+                latitudeDelta: 0,
+                longitudeDelta: 0
+            }
         }
     }
 
-    componentDidMount() {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const latDelta = Number(position.coords.latitude) - Number(position.coords.latitude)
-                const lngDelta = Number(position.coords.longitude) - Number(position.coords.longitude)
-                this.setState({
-                    mapRegion: {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                        latitudeDelta: latDelta,
-                        longitudeDelta: lngDelta
-                    }
-                });
-            },
-            (error) => this.setState({ error: error.message }),
-            { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 },
-        );
+    componentWillMount() {
+        if (Platform.OS === 'android' && !Constants.isDevice) {
+            console.log('Err')
+            this.setState({
+                errorMessage: 'Oops, this will not work on Sketch in an Android emulator. Try it on your device!',
+            });
+        } else {
+            console.log(Platform)
+            this._getLocationAsync();
+        }
     }
+    _getLocationAsync = async () => {
+        let { status } = await Permissions.askAsync(Permissions.LOCATION);
+        if (status !== 'granted') {
+            this.setState({
+                errorMessage: 'Permission to access location was denied',
+            });
+        }
+
+        let location = await Location.getCurrentPositionAsync({});
+        let region = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            latitudeDelta: 0.00922 * 1.5,
+            longitudeDelta: 0.00421 * 1.5
+        }
+        this.setState({ mapRegion: region });
+    };
 
     startTrip = () => {
         console.log('event')
@@ -78,13 +88,20 @@ export default class HomeScreen extends React.Component {
         console.log('sign up button clicked')
     }
 
-    _handleMapRegionChange = mapRegion => {
-        console.log(mapRegion)
+    onRegionChange = (mapRegion) => {
         this.setState({ mapRegion });
-        // this.getMaps
     };
+    static navigationOptions = ({ navigation }) => {
+        return { header: null }
+    }
+
 
     render() {
+        const arrMap = [
+            { latitude: this.state.mapRegion.latitude + 0.000003, longitude: this.state.mapRegion.longitude + 0.000003 },
+            { latitude: this.state.mapRegion.latitude + 0.000033, longitude: this.state.mapRegion.longitude + 0.000033 },
+            { latitude: this.state.mapRegion.latitude + 0.000036, longitude: this.state.mapRegion.longitude + 0.000036 }
+        ]
         return (
             <View style={styles.container}>
                 {Platform.OS === 'ios'
@@ -115,52 +132,21 @@ export default class HomeScreen extends React.Component {
                             region={this.state.mapRegion}
                             pinColor={'green'}
                             onLayout={this.onMapLayout}
+                            pointerEvents="none"
                             initialRegion={this.state.mapRegion}
-                            onRegionChange={this._handleMapRegionChange}
+                            onRegionChange={this.onRegionChange}
                         >
                             {this.state.isMapReady && <MapView.Marker
                                 coordinate={{ latitude: this.state.mapRegion.latitude, longitude: this.state.mapRegion.longitude }}
                                 title={'test'}
                                 description={'description'}
                             />}
+                            <MapView.Polyline coordinates={arrMap} strokeColor={'steelblue'} />
                         </MapView>
                     </ScrollView>}
             </View>
         );
     }
-
-    _maybeRenderDevelopmentModeWarning() {
-        if (__DEV__) {
-            const learnMoreButton = (
-                <Text onPress={this._handleLearnMorePress} style={styles.helpLinkText}>
-                    Learn more
-        </Text>
-            );
-
-            return (
-                <Text style={styles.developmentModeText}>
-                    Development mode is enabled, your app will be slower but you can use useful development
-          tools. {learnMoreButton}
-                </Text>
-            );
-        } else {
-            return (
-                <Text style={styles.developmentModeText}>
-                    You are not in development mode, your app will run at full speed.
-        </Text>
-            );
-        }
-    }
-
-    // _handleLearnMorePress = () => {
-    //   WebBrowser.openBrowserAsync('https://docs.expo.io/versions/latest/guides/development-mode');
-    // };
-
-    // _handleHelpPress = () => {
-    //   WebBrowser.openBrowserAsync(
-    //     'https://docs.expo.io/versions/latest/guides/up-and-running.html#can-t-see-your-changes'
-    //   );
-    // };
 }
 
 const styles = StyleSheet.create({

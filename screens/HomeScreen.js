@@ -15,6 +15,7 @@ import firebase from './firebase'
 import * as Progress from 'react-native-progress';
 import LoginScreen from './LoginScreen'
 import SignUpScreen from './SignUpScreen'
+import MapScreen from './MapScreen'
 import {
   StackNavigator,
 } from 'react-navigation'
@@ -24,58 +25,6 @@ class HomeScreen extends React.Component {
     super(props)
     this.state = {
       loading: false
-    }
-  }
-  signUpUser = (email, password) => {
-    this.setState({ loading: true })
-    try {
-      firebase.auth().createUserWithEmailAndPassword(email, password)
-        .then(() => {
-          var user = firebase.auth().currentUser
-          this.setState({ loading: false, user: user });
-          alert('Successfully Registered!')
-        })
-        .catch((error) => {
-          // Handle Errors here.
-          var errorCode = error.code;
-          var errorMessage = error.message;
-          if (errorCode == 'auth/weak-password') {
-            this.setState({ loading: false }, alert(errorMessage));
-          } else {
-            this.setState({ loading: false, email: '', password: '' }, alert(errorMessage));
-          }
-          console.log(error)
-        })
-    } catch (error) {
-      console.log(error)
-    }
-
-  }
-
-  SignUpSubmit = () => {
-    if (this.validateEmail() && this.validatePassword()) {
-      this.signUpUser(this.state.email, this.state.password)
-    }
-  }
-  validateEmail = () => {
-    let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/
-    if (reg.test(this.state.email) === false) {
-      this.setState({ emailError: true })
-      return false
-    }
-    else {
-      this.setState({ emailError: false })
-      return true
-    }
-  }
-  validatePassword = () => {
-    if (this.state.password) {
-      this.setState({ passwordError: false })
-      return true
-    }
-    else {
-      this.setState({ passwordError: true })
-      return false
     }
   }
   static navigationOptions = {
@@ -89,7 +38,7 @@ class HomeScreen extends React.Component {
           ? <ScrollView style={styles.container} contentContainerStyle={styles.contentContainerIos}>
             <View style={styles.getStartedContainer}>
               <Text style={styles.getStartedText}>
-                Oops this project is available only in Android
+                Oops! This project is available only in Android
             </Text>
             </View>
           </ScrollView>
@@ -98,17 +47,13 @@ class HomeScreen extends React.Component {
               <Text style={styles.getStartedText}>
                 Track your trip over google maps!
               </Text>
-              <Button onPress={() => navigate('Login', { name: 'Login', PageError: null })} title="Login" />
-              <View style={styles.textInputView}><TextInput style={styles.textInput} editable={!this.state.loading} onBlur={this.validateEmail} placeholder="Email" onChangeText={(email) => this.setState({ email })} keyboardType="email-address" value={this.state.email} />
-                {this.state.emailError && <Text style={styles.errorText}>Enter Valid Email</Text>}
-              </View>
-              <View style={styles.textInputView}><TextInput style={styles.textInput} editable={!this.state.loading} placeholder="Password" onChangeText={(password) => this.setState({ password })} onBlur={this.validatePassword} secureTextEntry={true} value={this.state.password} />
-                {this.state.passwordError && <Text style={styles.errorText}>Password is Required</Text>}
-              </View>
-              {this.state.loading && <Progress.Circle style={{ position: 'absolute', flex: 1, alignSelf: 'center', margin: 'auto' }} size={30} indeterminate={true} />}
               <View style={styles.SignUpButtonView}>
-                <TouchableOpacity onPress={this.startTrip} style={styles.signUpTouchable}><Button style={styles.signUpButton} title="Home!" color="steelblue" onPress={this.SignUpSubmit} /></TouchableOpacity>
+                <TouchableOpacity onPress={() => navigate('SignUp')} style={styles.signUpTouchable}><Button style={styles.signUpButton} title="Sign Up!" color="steelblue" onPress={() => navigate('SignUp', { PageError: null })} /></TouchableOpacity>
               </View>
+              <View style={styles.SignUpButtonView}>
+                <TouchableOpacity onPress={() => navigate('Login')} style={styles.signUpTouchable}><Button style={styles.signUpButton} title="Login!" color="steelblue" onPress={() => navigate('Login', { PageError: null })} /></TouchableOpacity>
+              </View>
+              <Button title="map" onPress={() => navigate('MapScreen')} />
             </View>
           </ScrollView>}
       </View>
@@ -119,8 +64,9 @@ class HomeScreen extends React.Component {
 const HomeScreenNav = StackNavigator({
   Home: { screen: HomeScreen },
   SignUp: { screen: SignUpScreen },
-  Login: { screen: LoginScreen }
-}, { headerMode: 'none', initialRouteName: 'Login' });
+  Login: { screen: LoginScreen },
+  MapScreen: { screen: MapScreen }
+}, { headerMode: 'none' });
 
 const styles = StyleSheet.create({
   container: {
